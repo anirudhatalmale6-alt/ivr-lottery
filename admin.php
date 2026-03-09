@@ -7,6 +7,34 @@
 define('DATA_FILE', __DIR__ . '/data/registrations.json');
 define('COUNTER_FILE', __DIR__ . '/data/counter.json');
 
+// Handle CSV export
+if (isset($_GET['export']) && $_GET['export'] === 'excel') {
+    $registrations = [];
+    if (file_exists(DATA_FILE)) {
+        $registrations = json_decode(file_get_contents(DATA_FILE), true) ?: [];
+    }
+    usort($registrations, function($a, $b) {
+        return ($b['timestamp'] ?? 0) - ($a['timestamp'] ?? 0);
+    });
+
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="registrations_' . date('Y-m-d') . '.csv"');
+    $bom = "\xEF\xBB\xBF";
+    echo $bom;
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['#', 'מספר אישור', 'מספר טלפון', 'תאריך']);
+    foreach ($registrations as $i => $reg) {
+        fputcsv($out, [
+            $i + 1,
+            $reg['confirmNumber'] ?? '',
+            $reg['phone'] ?? '',
+            $reg['date'] ?? ''
+        ]);
+    }
+    fclose($out);
+    exit;
+}
+
 // Handle delete action
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'delete' && isset($_POST['id'])) {
@@ -45,67 +73,86 @@ $totalCount = count($registrations);
 <title>ניהול הרשמות להגרלה</title>
 <style>
 :root {
-    --primary: #4361ee;
-    --primary-dark: #3a0ca3;
-    --danger: #ef476f;
-    --success: #06d6a0;
-    --bg: #0f0f1a;
-    --card: #1a1a2e;
-    --text: #e0e0e0;
-    --muted: #8d99ae;
-    --border: #2d2d44;
+    --primary: #7c5cbf;
+    --primary-light: #9b7fd4;
+    --danger: #e74c5a;
+    --success: #2ecc71;
+    --bg: #1a1a2e;
+    --card: #16213e;
+    --card2: #0f3460;
+    --text: #eaeaea;
+    --muted: #a0aec0;
+    --border: #2a2a4a;
+    --gold: #e2b655;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
     color: var(--text);
     min-height: 100vh;
 }
 .header {
-    background: var(--card);
-    border-bottom: 1px solid var(--border);
+    background: rgba(15, 52, 96, 0.8);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(124, 92, 191, 0.3);
     padding: 20px 30px;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 .header h1 { font-size: 22px; color: #fff; }
-.header h1 span { color: var(--primary); }
-.stats {
+.header h1 span { color: var(--gold); }
+.header-actions {
     display: flex;
-    gap: 20px;
+    gap: 15px;
     align-items: center;
 }
 .stat-box {
-    background: rgba(67,97,238,0.1);
-    border: 1px solid rgba(67,97,238,0.3);
+    background: rgba(124, 92, 191, 0.15);
+    border: 1px solid rgba(124, 92, 191, 0.35);
     border-radius: 10px;
     padding: 10px 20px;
     text-align: center;
 }
-.stat-num { font-size: 28px; font-weight: 700; color: var(--primary); }
+.stat-num { font-size: 28px; font-weight: 700; color: var(--gold); }
 .stat-label { font-size: 11px; color: var(--muted); }
+.btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(46, 204, 113, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(46, 204, 113, 0.35);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+.btn-export:hover { background: rgba(46, 204, 113, 0.3); }
 .content { padding: 24px 30px; }
 .table-wrapper {
-    background: var(--card);
+    background: rgba(22, 33, 62, 0.9);
     border-radius: 14px;
     border: 1px solid var(--border);
     overflow: hidden;
+    backdrop-filter: blur(5px);
 }
 table {
     width: 100%;
     border-collapse: collapse;
 }
 thead th {
-    background: rgba(67,97,238,0.08);
+    background: rgba(124, 92, 191, 0.12);
     padding: 14px 16px;
     text-align: right;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    color: var(--primary-light);
     border-bottom: 1px solid var(--border);
 }
 tbody td {
@@ -113,12 +160,12 @@ tbody td {
     border-bottom: 1px solid rgba(255,255,255,0.04);
     font-size: 14px;
 }
-tbody tr:hover { background: rgba(255,255,255,0.03); }
+tbody tr:hover { background: rgba(124, 92, 191, 0.08); }
 tbody tr:last-child td { border-bottom: none; }
 .confirm-badge {
     display: inline-block;
-    background: rgba(6,214,160,0.15);
-    color: var(--success);
+    background: rgba(226, 182, 85, 0.15);
+    color: var(--gold);
     padding: 4px 12px;
     border-radius: 6px;
     font-weight: 700;
@@ -143,11 +190,11 @@ tbody tr:last-child td { border-bottom: none; }
     transition: all 0.2s;
 }
 .btn-delete {
-    background: rgba(239,71,111,0.1);
+    background: rgba(231, 76, 90, 0.1);
     color: var(--danger);
-    border: 1px solid rgba(239,71,111,0.3);
+    border: 1px solid rgba(231, 76, 90, 0.3);
 }
-.btn-delete:hover { background: rgba(239,71,111,0.25); }
+.btn-delete:hover { background: rgba(231, 76, 90, 0.25); }
 .empty-state {
     text-align: center;
     padding: 60px 20px;
@@ -155,31 +202,16 @@ tbody tr:last-child td { border-bottom: none; }
 }
 .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
 .empty-state h3 { margin-bottom: 6px; color: var(--text); }
-.api-info {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 20px;
-    margin-bottom: 20px;
-}
-.api-info h3 { font-size: 14px; margin-bottom: 10px; color: var(--primary); }
-.api-url {
-    background: rgba(0,0,0,0.3);
-    border-radius: 8px;
-    padding: 12px 16px;
-    font-family: monospace;
-    font-size: 13px;
-    direction: ltr;
-    color: var(--success);
-    word-break: break-all;
-}
 .date-cell { white-space: nowrap; font-size: 13px; color: var(--muted); }
 </style>
 </head>
 <body>
 <div class="header">
     <h1>&#127922; ניהול הרשמות <span>להגרלה</span></h1>
-    <div class="stats">
+    <div class="header-actions">
+        <?php if ($totalCount > 0): ?>
+        <a href="admin.php?export=excel" class="btn-export">&#128202; ייצוא אקסל</a>
+        <?php endif; ?>
         <div class="stat-box">
             <div class="stat-num"><?= $totalCount ?></div>
             <div class="stat-label">נרשמים</div>
@@ -188,11 +220,6 @@ tbody tr:last-child td { border-bottom: none; }
 </div>
 
 <div class="content">
-    <div class="api-info">
-        <h3>&#128279; כתובת API למרכזיה:</h3>
-        <div class="api-url"><?= 'https://' . ($_SERVER['HTTP_HOST'] ?? 'YOUR_DOMAIN') . dirname($_SERVER['SCRIPT_NAME']) . '/api.php' ?></div>
-    </div>
-
     <div class="table-wrapper">
     <?php if ($totalCount === 0): ?>
         <div class="empty-state">
