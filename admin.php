@@ -132,12 +132,6 @@ tbody tr:last-child td { border-bottom: none; }
     direction: ltr;
     unicode-bidi: bidi-override;
 }
-.recording-link {
-    color: var(--primary);
-    font-size: 12px;
-    text-decoration: none;
-}
-.recording-link:hover { text-decoration: underline; }
 .btn {
     padding: 7px 14px;
     border: none;
@@ -214,7 +208,6 @@ tbody tr:last-child td { border-bottom: none; }
                 <th>מספר אישור</th>
                 <th>מספר טלפון</th>
                 <th>תאריך</th>
-                <th>הקלטת שם</th>
                 <th>למד משניות?</th>
                 <th>פעולות</th>
             </tr>
@@ -226,7 +219,6 @@ tbody tr:last-child td { border-bottom: none; }
                 <td><span class="confirm-badge"><?= htmlspecialchars($reg['confirmNumber'] ?? '') ?></span></td>
                 <td><span class="phone-num"><?= htmlspecialchars($reg['phone'] ?? '') ?></span></td>
                 <td class="date-cell"><?= htmlspecialchars($reg['date'] ?? '') ?></td>
-                <td><span class="recording-link">&#127908; <?= htmlspecialchars($reg['nameRecording'] ?? '-') ?></span></td>
                 <td><?php
                     $ans = $reg['mishnayotAnswer'] ?? $reg['mishnayotRecording'] ?? '-';
                     if ($ans === '1') echo '<span style="color:var(--success)">&#10003; כן</span>';

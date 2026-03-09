@@ -4,10 +4,9 @@
  * Handles PBX callbacks for lottery registration flow
  *
  * Flow:
- * 1. Record full name (max 5 sec)
+ * 1. Press 1 to register
  * 2. Ask "Did you study Mishnayot?" - DTMF input (1=yes, 2=no)
- * 3. Get digit 1 confirmation
- * 4. Success message with confirmation number
+ * 3. Success message with confirmation number (3 digits)
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -27,9 +26,8 @@ $pbxExtId      = $_GET['PBXextensionId'] ?? '';
 $pbxExtPath    = $_GET['PBXextensionPath'] ?? '';
 
 // Flow parameters (chained by PBX)
-$step1Name      = $_GET['step1_name'] ?? '';
+$step1Register  = $_GET['step1_register'] ?? '';
 $step2Mishnayot = $_GET['step2_mishnayot'] ?? '';
-$step3Confirm   = $_GET['step3_confirm'] ?? '';
 
 // Handle hangup
 if ($pbxCallStatus === 'HANGUP') {
@@ -38,12 +36,12 @@ if ($pbxCallStatus === 'HANGUP') {
 }
 
 // Determine current step based on which parameters exist
-if (!empty($step3Confirm)) {
-    // Step 4: Confirmation received - save and play success
+if (!empty($step2Mishnayot)) {
+    // Step 3: Mishnayot answered - save and play confirmation
     $confirmNum = getNextConfirmation();
-    saveRegistration($pbxPhone, $pbxCallId, $step1Name, $step2Mishnayot, $confirmNum);
+    saveRegistration($pbxPhone, $pbxCallId, $step2Mishnayot, $confirmNum);
 
-    $numPadded = str_pad($confirmNum, 4, '0', STR_PAD_LEFT);
+    $numPadded = str_pad($confirmNum, 3, '0', STR_PAD_LEFT);
 
     echo json_encode([
         "type" => "audioPlayer",
@@ -56,24 +54,8 @@ if (!empty($step3Confirm)) {
         ]
     ]);
 
-} elseif (!empty($step2Mishnayot)) {
-    // Step 3: Mishnayot recording done - ask for confirmation (digit 1)
-    echo json_encode([
-        "type" => "simpleMenu",
-        "name" => "step3_confirm",
-        "times" => 3,
-        "timeout" => 10,
-        "enabledKeys" => "1",
-        "setMusic" => "no",
-        "extensionChange" => "",
-        "errorReturn" => "ERROR",
-        "files" => [
-            ["text" => "לאישור ההרשמה הקישו 1"]
-        ]
-    ]);
-
-} elseif (!empty($step1Name)) {
-    // Step 2: Name recorded - ask about Mishnayot (DTMF input: 1=yes, 2=no)
+} elseif (!empty($step1Register)) {
+    // Step 2: Registered - ask about Mishnayot (1=yes, 2=no)
     echo json_encode([
         "type" => "simpleMenu",
         "name" => "step2_mishnayot",
@@ -89,25 +71,18 @@ if (!empty($step3Confirm)) {
     ]);
 
 } else {
-    // Step 1: Initial call - welcome + record name
+    // Step 1: Initial call - press 1 to register
     echo json_encode([
-        [
-            "type" => "audioPlayer",
-            "name" => "welcome",
-            "files" => [
-                ["text" => "שלום וברוכים הבאים למערכת ההרשמה להגרלה"]
-            ]
-        ],
-        [
-            "type" => "record",
-            "name" => "step1_name",
-            "max" => 5,
-            "min" => 1,
-            "confirm" => "no",
-            "fileName" => "lottery_" . $pbxCallId . "_000",
-            "files" => [
-                ["text" => "אנא הקליטו את שמכם המלא"]
-            ]
+        "type" => "simpleMenu",
+        "name" => "step1_register",
+        "times" => 3,
+        "timeout" => 10,
+        "enabledKeys" => "1",
+        "setMusic" => "no",
+        "extensionChange" => "",
+        "errorReturn" => "ERROR",
+        "files" => [
+            ["text" => "להרשמה להגרלה הקישו 1"]
         ]
     ]);
 }
@@ -125,7 +100,7 @@ function getNextConfirmation() {
     return $counter;
 }
 
-function saveRegistration($phone, $callId, $nameRecording, $mishnayotAnswer, $confirmNum) {
+function saveRegistration($phone, $callId, $mishnayotAnswer, $confirmNum) {
     $registrations = [];
     if (file_exists(DATA_FILE)) {
         $registrations = json_decode(file_get_contents(DATA_FILE), true) ?: [];
@@ -135,9 +110,8 @@ function saveRegistration($phone, $callId, $nameRecording, $mishnayotAnswer, $co
         'id' => $confirmNum,
         'phone' => $phone,
         'callId' => $callId,
-        'nameRecording' => $nameRecording,
         'mishnayotAnswer' => $mishnayotAnswer,
-        'confirmNumber' => str_pad($confirmNum, 4, '0', STR_PAD_LEFT),
+        'confirmNumber' => str_pad($confirmNum, 3, '0', STR_PAD_LEFT),
         'date' => date('Y-m-d H:i:s'),
         'timestamp' => time()
     ];
