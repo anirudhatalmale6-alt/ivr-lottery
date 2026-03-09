@@ -4,8 +4,7 @@
  * Handles PBX callbacks for lottery registration flow
  *
  * Flow:
- * 1. Press 1 to register
- * 2. Success message with confirmation number (3 digits)
+ * 1. Caller enters - immediately gets confirmation number (3 digits)
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -24,48 +23,26 @@ $pbxCallStatus = $_GET['PBXcallStatus'] ?? '';
 $pbxExtId      = $_GET['PBXextensionId'] ?? '';
 $pbxExtPath    = $_GET['PBXextensionPath'] ?? '';
 
-// Flow parameters (chained by PBX)
-$step1Register  = $_GET['step1_register'] ?? '';
-
 // Handle hangup
 if ($pbxCallStatus === 'HANGUP') {
     echo json_encode(["status" => "ok"]);
     exit;
 }
 
-// Determine current step based on which parameters exist
-if (!empty($step1Register)) {
-    // Step 2: Registered - save and play confirmation
-    $confirmNum = getNextConfirmation();
-    saveRegistration($pbxPhone, $pbxCallId, $confirmNum);
+// Immediate registration - save and play confirmation
+$confirmNum = getNextConfirmation();
+saveRegistration($pbxPhone, $pbxCallId, $confirmNum);
 
-    $numPadded = str_pad($confirmNum, 3, '0', STR_PAD_LEFT);
+$numPadded = str_pad($confirmNum, 3, '0', STR_PAD_LEFT);
 
-    echo json_encode([
-        "type" => "audioPlayer",
-        "name" => "done",
-        "files" => [
-            ["fileName" => "001"],
-            ["digits" => $numPadded]
-        ]
-    ]);
-
-} else {
-    // Step 1: Initial call - press 1 to register
-    echo json_encode([
-        "type" => "simpleMenu",
-        "name" => "step1_register",
-        "times" => 3,
-        "timeout" => 10,
-        "enabledKeys" => "1",
-        "setMusic" => "no",
-        "extensionChange" => "",
-        "errorReturn" => "ERROR",
-        "files" => [
-            ["fileName" => "000"]
-        ]
-    ]);
-}
+echo json_encode([
+    "type" => "audioPlayer",
+    "name" => "done",
+    "files" => [
+        ["fileName" => "001"],
+        ["digits" => $numPadded]
+    ]
+]);
 
 // ============ Helper Functions ============
 
