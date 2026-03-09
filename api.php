@@ -5,8 +5,7 @@
  *
  * Flow:
  * 1. Press 1 to register
- * 2. Ask "Did you study Mishnayot?" - DTMF input (1=yes, 2=no)
- * 3. Success message with confirmation number (3 digits)
+ * 2. Success message with confirmation number (3 digits)
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -27,7 +26,6 @@ $pbxExtPath    = $_GET['PBXextensionPath'] ?? '';
 
 // Flow parameters (chained by PBX)
 $step1Register  = $_GET['step1_register'] ?? '';
-$step2Mishnayot = $_GET['step2_mishnayot'] ?? '';
 
 // Handle hangup
 if ($pbxCallStatus === 'HANGUP') {
@@ -36,10 +34,10 @@ if ($pbxCallStatus === 'HANGUP') {
 }
 
 // Determine current step based on which parameters exist
-if (!empty($step2Mishnayot)) {
-    // Step 3: Mishnayot answered - save and play confirmation
+if (!empty($step1Register)) {
+    // Step 2: Registered - save and play confirmation
     $confirmNum = getNextConfirmation();
-    saveRegistration($pbxPhone, $pbxCallId, $step2Mishnayot, $confirmNum);
+    saveRegistration($pbxPhone, $pbxCallId, $confirmNum);
 
     $numPadded = str_pad($confirmNum, 3, '0', STR_PAD_LEFT);
 
@@ -51,22 +49,6 @@ if (!empty($step2Mishnayot)) {
             ["text" => "מספר האישור שלכם הוא"],
             ["digits" => $numPadded],
             ["text" => "תודה רבה ובהצלחה"]
-        ]
-    ]);
-
-} elseif (!empty($step1Register)) {
-    // Step 2: Registered - ask about Mishnayot (1=yes, 2=no)
-    echo json_encode([
-        "type" => "simpleMenu",
-        "name" => "step2_mishnayot",
-        "times" => 3,
-        "timeout" => 10,
-        "enabledKeys" => "1,2",
-        "setMusic" => "no",
-        "extensionChange" => "",
-        "errorReturn" => "ERROR",
-        "files" => [
-            ["text" => "האם למדתם את המשניות? הקישו 1 עבור כן, הקישו 2 עבור לא"]
         ]
     ]);
 
@@ -82,7 +64,7 @@ if (!empty($step2Mishnayot)) {
         "extensionChange" => "",
         "errorReturn" => "ERROR",
         "files" => [
-            ["text" => "להרשמה להגרלה הקישו 1"]
+            ["text" => "מי שרוצה להרשמה להגרלה הקישו 1"]
         ]
     ]);
 }
@@ -100,7 +82,7 @@ function getNextConfirmation() {
     return $counter;
 }
 
-function saveRegistration($phone, $callId, $mishnayotAnswer, $confirmNum) {
+function saveRegistration($phone, $callId, $confirmNum) {
     $registrations = [];
     if (file_exists(DATA_FILE)) {
         $registrations = json_decode(file_get_contents(DATA_FILE), true) ?: [];
@@ -110,7 +92,6 @@ function saveRegistration($phone, $callId, $mishnayotAnswer, $confirmNum) {
         'id' => $confirmNum,
         'phone' => $phone,
         'callId' => $callId,
-        'mishnayotAnswer' => $mishnayotAnswer,
         'confirmNumber' => str_pad($confirmNum, 3, '0', STR_PAD_LEFT),
         'date' => date('Y-m-d H:i:s'),
         'timestamp' => time()

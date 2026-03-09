@@ -208,7 +208,6 @@ tbody tr:last-child td { border-bottom: none; }
                 <th>מספר אישור</th>
                 <th>מספר טלפון</th>
                 <th>תאריך</th>
-                <th>למד משניות?</th>
                 <th>פעולות</th>
             </tr>
         </thead>
@@ -219,12 +218,6 @@ tbody tr:last-child td { border-bottom: none; }
                 <td><span class="confirm-badge"><?= htmlspecialchars($reg['confirmNumber'] ?? '') ?></span></td>
                 <td><span class="phone-num"><?= htmlspecialchars($reg['phone'] ?? '') ?></span></td>
                 <td class="date-cell"><?= htmlspecialchars($reg['date'] ?? '') ?></td>
-                <td><?php
-                    $ans = $reg['mishnayotAnswer'] ?? $reg['mishnayotRecording'] ?? '-';
-                    if ($ans === '1') echo '<span style="color:var(--success)">&#10003; כן</span>';
-                    elseif ($ans === '2') echo '<span style="color:var(--danger)">&#10007; לא</span>';
-                    else echo htmlspecialchars($ans);
-                ?></td>
                 <td>
                     <form method="POST" style="display:inline" onsubmit="return confirm('למחוק הרשמה זו?')">
                         <input type="hidden" name="action" value="delete">
