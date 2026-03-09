@@ -5,7 +5,7 @@
  *
  * Flow:
  * 1. Record full name (max 5 sec)
- * 2. Record "Did you study Mishnayot?" answer
+ * 2. Ask "Did you study Mishnayot?" - DTMF input (1=yes, 2=no)
  * 3. Get digit 1 confirmation
  * 4. Success message with confirmation number
  */
@@ -73,16 +73,18 @@ if (!empty($step3Confirm)) {
     ]);
 
 } elseif (!empty($step1Name)) {
-    // Step 2: Name recorded - ask about Mishnayot
+    // Step 2: Name recorded - ask about Mishnayot (DTMF input: 1=yes, 2=no)
     echo json_encode([
-        "type" => "record",
+        "type" => "simpleMenu",
         "name" => "step2_mishnayot",
-        "max" => 5,
-        "min" => 1,
-        "confirm" => "no",
-        "fileName" => "lottery_" . $pbxCallId . "_001",
+        "times" => 3,
+        "timeout" => 10,
+        "enabledKeys" => "1,2",
+        "setMusic" => "no",
+        "extensionChange" => "",
+        "errorReturn" => "ERROR",
         "files" => [
-            ["text" => "האם למדתם את המשניות? אנא הקליטו את תשובתכם"]
+            ["text" => "האם למדתם את המשניות? הקישו 1 עבור כן, הקישו 2 עבור לא"]
         ]
     ]);
 
@@ -123,7 +125,7 @@ function getNextConfirmation() {
     return $counter;
 }
 
-function saveRegistration($phone, $callId, $nameRecording, $mishnayotRecording, $confirmNum) {
+function saveRegistration($phone, $callId, $nameRecording, $mishnayotAnswer, $confirmNum) {
     $registrations = [];
     if (file_exists(DATA_FILE)) {
         $registrations = json_decode(file_get_contents(DATA_FILE), true) ?: [];
@@ -134,7 +136,7 @@ function saveRegistration($phone, $callId, $nameRecording, $mishnayotRecording, 
         'phone' => $phone,
         'callId' => $callId,
         'nameRecording' => $nameRecording,
-        'mishnayotRecording' => $mishnayotRecording,
+        'mishnayotAnswer' => $mishnayotAnswer,
         'confirmNumber' => str_pad($confirmNum, 4, '0', STR_PAD_LEFT),
         'date' => date('Y-m-d H:i:s'),
         'timestamp' => time()
