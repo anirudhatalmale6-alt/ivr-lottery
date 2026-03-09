@@ -22,12 +22,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         header('Location: admin.php');
         exit;
     }
-    if ($_POST['action'] === 'reset') {
-        file_put_contents(DATA_FILE, '[]', LOCK_EX);
-        file_put_contents(COUNTER_FILE, json_encode(['counter' => 0]), LOCK_EX);
-        header('Location: admin.php');
-        exit;
-    }
 }
 
 // Load registrations
@@ -160,14 +154,6 @@ tbody tr:last-child td { border-bottom: none; }
     border: 1px solid rgba(239,71,111,0.3);
 }
 .btn-delete:hover { background: rgba(239,71,111,0.25); }
-.btn-reset {
-    background: rgba(239,71,111,0.1);
-    color: var(--danger);
-    border: 1px solid rgba(239,71,111,0.3);
-    padding: 8px 16px;
-    font-size: 13px;
-}
-.btn-reset:hover { background: rgba(239,71,111,0.25); }
 .empty-state {
     text-align: center;
     padding: 60px 20px;
@@ -204,10 +190,6 @@ tbody tr:last-child td { border-bottom: none; }
             <div class="stat-num"><?= $totalCount ?></div>
             <div class="stat-label">נרשמים</div>
         </div>
-        <form method="POST" onsubmit="return confirm('האם למחוק את כל הנתונים?')">
-            <input type="hidden" name="action" value="reset">
-            <button type="submit" class="btn btn-reset">&#128465; איפוס</button>
-        </form>
     </div>
 </div>
 
