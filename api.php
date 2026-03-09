@@ -64,7 +64,7 @@ if (!empty($step1Register)) {
         "extensionChange" => "",
         "errorReturn" => "ERROR",
         "files" => [
-            ["text" => "מי שרוצה להרשמה להגרלה הקישו 1"]
+            ["fileName" => "000"]
         ]
     ]);
 }
