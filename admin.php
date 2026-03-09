@@ -37,14 +37,14 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
 
 // Handle delete action
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    if ($_POST['action'] === 'delete' && isset($_POST['id'])) {
-        $id = (int)$_POST['id'];
+    if ($_POST['action'] === 'delete_selected' && isset($_POST['ids']) && is_array($_POST['ids'])) {
+        $idsToDelete = array_map('intval', $_POST['ids']);
         $registrations = [];
         if (file_exists(DATA_FILE)) {
             $registrations = json_decode(file_get_contents(DATA_FILE), true) ?: [];
         }
-        $registrations = array_values(array_filter($registrations, function($r) use ($id) {
-            return $r['id'] !== $id;
+        $registrations = array_values(array_filter($registrations, function($r) use ($idsToDelete) {
+            return !in_array($r['id'], $idsToDelete);
         }));
         file_put_contents(DATA_FILE, json_encode($registrations, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
         header('Location: admin.php');
@@ -190,11 +190,22 @@ tbody tr:last-child td { border-bottom: none; }
     transition: all 0.2s;
 }
 .btn-delete {
-    background: rgba(231, 76, 90, 0.1);
+    background: rgba(231, 76, 90, 0.15);
     color: var(--danger);
     border: 1px solid rgba(231, 76, 90, 0.3);
+    padding: 8px 16px;
+    font-size: 13px;
+    display: none;
 }
-.btn-delete:hover { background: rgba(231, 76, 90, 0.25); }
+.btn-delete:hover { background: rgba(231, 76, 90, 0.3); }
+.btn-delete.visible { display: inline-flex; align-items: center; gap: 6px; }
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+thead th:first-child, tbody td:first-child { text-align: center; width: 40px; }
 .empty-state {
     text-align: center;
     padding: 60px 20px;
@@ -228,34 +239,52 @@ tbody tr:last-child td { border-bottom: none; }
             <p>כשמישהו יתקשר ויירשם להגרלה, הנתונים יופיעו כאן</p>
         </div>
     <?php else: ?>
+        <form id="bulkForm" method="POST">
+        <input type="hidden" name="action" value="delete_selected">
+        <div style="padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border);">
+            <span id="selectedCount" style="color: var(--muted); font-size: 13px;"></span>
+            <button type="submit" id="bulkDeleteBtn" class="btn btn-delete" onclick="return confirm('למחוק את ההרשמות שנבחרו?')">&#128465; מחק נבחרים</button>
+        </div>
         <table>
         <thead>
             <tr>
+                <th><input type="checkbox" id="selectAll"></th>
                 <th>#</th>
                 <th>מספר אישור</th>
                 <th>מספר טלפון</th>
                 <th>תאריך</th>
-                <th>פעולות</th>
             </tr>
         </thead>
         <tbody>
         <?php foreach ($registrations as $i => $reg): ?>
             <tr>
+                <td><input type="checkbox" name="ids[]" value="<?= (int)($reg['id'] ?? 0) ?>" class="row-cb"></td>
                 <td><?= $i + 1 ?></td>
                 <td><span class="confirm-badge"><?= htmlspecialchars($reg['confirmNumber'] ?? '') ?></span></td>
                 <td><span class="phone-num"><?= htmlspecialchars($reg['phone'] ?? '') ?></span></td>
                 <td class="date-cell"><?= htmlspecialchars($reg['date'] ?? '') ?></td>
-                <td>
-                    <form method="POST" style="display:inline" onsubmit="return confirm('למחוק הרשמה זו?')">
-                        <input type="hidden" name="action" value="delete">
-                        <input type="hidden" name="id" value="<?= (int)($reg['id'] ?? 0) ?>">
-                        <button type="submit" class="btn btn-delete">&#128465; מחק</button>
-                    </form>
-                </td>
             </tr>
         <?php endforeach; ?>
         </tbody>
         </table>
+        </form>
+        <script>
+        var cbs = document.querySelectorAll('.row-cb');
+        var selAll = document.getElementById('selectAll');
+        var btn = document.getElementById('bulkDeleteBtn');
+        var countEl = document.getElementById('selectedCount');
+        function update() {
+            var c = document.querySelectorAll('.row-cb:checked').length;
+            btn.className = 'btn btn-delete' + (c > 0 ? ' visible' : '');
+            countEl.textContent = c > 0 ? c + ' נבחרו' : '';
+            selAll.checked = c === cbs.length && c > 0;
+        }
+        selAll.addEventListener('change', function() {
+            cbs.forEach(function(cb) { cb.checked = selAll.checked; });
+            update();
+        });
+        cbs.forEach(function(cb) { cb.addEventListener('change', update); });
+        </script>
     <?php endif; ?>
     </div>
 </div>

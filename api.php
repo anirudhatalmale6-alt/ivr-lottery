@@ -38,6 +38,7 @@ $numPadded = str_pad($confirmNum, 3, '0', STR_PAD_LEFT);
 echo json_encode([
     "type" => "audioPlayer",
     "name" => "done",
+    "beepPlay" => "NO",
     "files" => [
         ["fileName" => "001"],
         ["digits" => $numPadded]
