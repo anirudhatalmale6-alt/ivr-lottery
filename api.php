@@ -45,10 +45,8 @@ if (!empty($step1Register)) {
         "type" => "audioPlayer",
         "name" => "done",
         "files" => [
-            ["text" => "נרשמתם בהצלחה להגרלה"],
-            ["text" => "מספר האישור שלכם הוא"],
-            ["digits" => $numPadded],
-            ["text" => "תודה רבה ובהצלחה"]
+            ["fileName" => "001"],
+            ["digits" => $numPadded]
         ]
     ]);
 
